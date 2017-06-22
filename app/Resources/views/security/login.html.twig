@@ -1,0 +1,30 @@
+{% extends "security/base.html.twig" %}
+
+{% block form %}
+    <form class=" form-signin" action="{{ path('app.security.login') }}" method="post">
+        <label class="control-label" for="username">Mail</label>
+        <div class="form-group">
+            <input type="text" id="username" name="_username" value="" class="form-control" />
+            <span id="helpBlock2" class="help-block"></span>
+        </div>
+        <label for="password">Password</label>
+        <div class="form-group">
+            <input type="password" id="password" name="_password" class="form-control" />
+            <span id="helpBlock2" class="help-block"></span>
+
+            <a class="password-forgotten" href="/forgotpassword"><em>J'ai oublié mon mot de passe</em></a>
+        </div>
+        {#
+            If you want to control the URL the user
+            is redirected to on success (more details below)
+            <input type="hidden" name="_target_path" value="/account" />
+        #}
+
+        <button class="btn btn-lg btn-warning btn-block" type="submit">login</button>
+    </form>
+
+{% endblock %}
+
+
+
+

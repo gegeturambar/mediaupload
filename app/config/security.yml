@@ -1,0 +1,54 @@
+# To get started with security, check out the documentation:
+# https://symfony.com/doc/current/security.html
+security:
+
+    encoders:
+        AppBundle\Entity\User:
+            algorithm: bcrypt
+            cost: 12
+        Symfony\Component\Security\Core\User\UserInterface: plaintext
+    # https://symfony.com/doc/current/security.html#b-configuring-how-users-are-loaded
+    providers:
+        chain_provider:
+                chain:
+                    providers: [ in_memory, our_db_provider ]
+        in_memory:
+            memory:
+                users:
+                    admin: { password: password, roles: 'ROLE_ADMIN' }
+                    bob: { password: password, roles: 'ROLE_USER' }
+        our_db_provider:
+            entity:
+                class: AppBundle:User
+                property: username
+
+    firewalls:
+        # disables authentication for assets and the profiler, adapt it according to your needs
+        dev:
+            pattern: ^/(_(profiler|wdt)|css|images|js)/
+            security: false
+
+        main:
+            pattern:    ^/
+            http_basic: ~
+            anonymous: ~
+            provider: chain_provider
+
+            form_login:
+                login_path: app.security.login
+                check_path: app.security.login
+                default_target_path: app.homepage.index
+            logout:
+                path:   app.security.logout
+                target: app.homepage.index
+                invalidate_session: true
+
+
+    access_control:
+            - { path: /superuser, roles: ROLE_SUPERUSER }
+            - { path: /admin, roles: ROLE_ADMIN }
+            - { path: /order, roles: ROLE_USER }
+
+    role_hierarchy:
+        ROLE_SUPERUSER:   ROLE_ADMIN
+        ROLE_ADMIN:       ROLE_USER
