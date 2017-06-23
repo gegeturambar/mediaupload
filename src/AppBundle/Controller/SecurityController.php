@@ -86,11 +86,24 @@ class SecurityController extends Controller
         if( !is_null($id) ){
             if($guest)
                 throw $this->createAccessDeniedException();
-            //TODO check if admin and if not check if id is himself
+            //TODO check if this is his id and if not check if admin, else => out
             $title = $translate->trans('user.title_update');
 
             $user = $this->getUser();
-            // case create by admin
+            if($user->id == $id){
+                $title = $translate->trans('user.title_update_own');
+                return $this->render('/security/form.html.twig', array('form'=>$form->createView(),
+                    'title' => $title
+                ));
+            }else{
+                // check if admin or superuser
+                if(!$this->get('security.authorization_checker')->isGranted('ADMIN'))
+                    throw $this->createAccessDeniedException();
+                $title = $translate->trans('user.title_update_own');
+                return $this->render('/security/form.html.twig', array('form'=>$form->createView(),
+                    'title' => $title
+                ));
+            }
 
         }elseif ($guest){ // case signin
             $title = $translate->trans('user.title_create_own');
@@ -105,9 +118,10 @@ class SecurityController extends Controller
 
         // envoi du formulaire sous form de html
         return $this->render('/security/form.html.twig', array('form'=>$form->createView(),
-            'title' => $title, 'action' => $action, '$action_name'
+            'title' => $title, 'action' => $action, 'action_name' => $action_name
         ));
     }
+
     /**
      * @Route("/delete/{id}", name="app.security.delete", requirements={"id" = "\d+"})
      */

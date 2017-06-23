@@ -43,7 +43,10 @@ services:
         arguments: ["@security.authorization_checker"]
         tags:
             - { name: form.type, alias: appbundle_user }
-    # add more services, or override services that need manual wiring
-    # AppBundle\Service\ExampleService:
-    #     arguments:
-    #         $someArgument: 'some_value'
+
+    app.services.twig:
+        class: AppBundle\Service\Twig\FunctionExtension
+        arguments: [ '@twig' ]
+        tags:
+            - { name: twig.extension }
+

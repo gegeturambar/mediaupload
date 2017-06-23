@@ -1,6 +1,8 @@
 <?php
 
 namespace AppBundle\Repository;
+use AppBundle\Entity\Directory;
+use Doctrine\ORM\Mapping;
 
 /**
  * DirectoryRepository
@@ -10,4 +12,51 @@ namespace AppBundle\Repository;
  */
 class DirectoryRepository extends \Doctrine\ORM\EntityRepository
 {
+    protected $container;
+
+    public function __construct(EntityManager $em, Mapping\ClassMetadata $class)
+    {
+        parent::__construct($em, $class);
+    }
+
+    public function init($basePath){
+
+        $em = $this->getEntityManager();
+        $em->getConnection();
+        $connection = $em->getConnection();
+        $tableName = $this->getClassMetadata()->getTableName();
+        $connection->beginTransaction();
+        try {
+            //$connection->query('SET FOREIGN_KEY_CHECKS=0');
+            $connection->query('DELETE FROM '.$tableName);
+            $connection->query('OPTIMIZE TABLE '.$tableName);
+            $qb = $connection->createQueryBuilder();
+            $qb->insert($tableName)->setValue('name',':name')
+                ->setValue("parentid",":parentid")
+                ->setValue("path",':path')
+                ->setValue('access',':access')
+                ->setParameters(array(
+                        ":name"      =>  'ROOT',
+                        ":parentid"  =>  0,
+                        ":path"      =>  $basePath,
+                        ":access"    =>  "ADMIN"
+                    )
+                );
+            //$connection->query('SET FOREIGN_KEY_CHECKS=1');
+            $connection->commit();
+        } catch (\Exception $e) {
+            $connection->rollback();
+        }
+
+        /*
+        $sql = "TRUNCATE TABLE $this->_table;ALTER TABLE $this->_table AUTO_INCREMENT = 1;";
+
+        $sql .= "INSERT INTO $this->_table (name,parentid,path,access,lft,rgt) VALUES (?,?,?,?,?,?);";
+        */
+        $base_path = "../../upload";
+        $options = array("ROOT",0,$base_path,"ADMIN",1,2);
+        $statement = $this->_dbh->prepare($sql);
+        $ret = $statement->execute($options);
+        return $ret;
+    }
 }
