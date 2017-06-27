@@ -1,0 +1,15 @@
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <a class="navbar-brand" href="{{ path("app.homepage.index") }}">Formulaire d'upload</a>
+            {% if is_granted('ADMIN') %}
+                <a class="navbar-brand" href="{{ path() }}/listuser">Liste des utilisateurs</a>
+                <a class="navbar-brand" href="{{ path() }}">Ajouter un utilisateur</a>
+                <a class="navbar-brand" href="{{ path() }}">Liste des répertoires</a>
+                <a class="navbar-brand" href="{{ path() }}">Ajouter un répertoire</a>
+            {% endif %}
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+        </div><!--/.nav-collapse -->
+    </div><!--/.container-fluid -->
+</nav>

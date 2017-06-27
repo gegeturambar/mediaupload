@@ -66,7 +66,7 @@ class Directory
     private $name;
 
     /**
-     * @ORM\ManyToOne(targetEntity="Directory")
+     * @ORM\ManyToOne(targetEntity="Directory",inversedBy="children")
      * @ORM\JoinColumn(name="parent_id", referencedColumnName="id")
      */
     private $parent;

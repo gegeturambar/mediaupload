@@ -15,8 +15,8 @@ security:
         in_memory:
             memory:
                 users:
-                    admin: { password: password, roles: 'ROLE_ADMIN' }
-                    bob: { password: password, roles: 'ROLE_USER' }
+                    admin: { password: password, roles: ['ROLE_ADMIN'] }
+                    bob: { password: password, roles: ['ROLE_USER'] }
         our_db_provider:
             entity:
                 class: AppBundle:User
@@ -40,15 +40,15 @@ security:
                 default_target_path: app.homepage.index
             logout:
                 path:   app.security.logout
-                target: app.homepage.index
+                target: app.security.login
                 invalidate_session: true
 
 
     access_control:
-            - { path: /superuser, roles: ROLE_SUPERUSER }
-            - { path: /admin, roles: ROLE_ADMIN }
-            - { path: /order, roles: ROLE_USER }
+            - { path: ^/superuser, role: ROLE_SUPERUSER }
+            - { path: ^/admin, role: ROLE_ADMIN }
+            - { path: ^/upload, role: ROLE_ADMIN }
 
     role_hierarchy:
-        ROLE_SUPERUSER:   ROLE_ADMIN
-        ROLE_ADMIN:       ROLE_USER
+        SUPERUSER:   [ROLE_ADMIN]
+        ADMIN:       [ROLE_USER]

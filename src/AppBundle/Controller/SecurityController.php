@@ -15,6 +15,13 @@ class SecurityController extends Controller
      */
     public function loginAction(Request $request)
     {
+        $securityContext = $this->container->get('security.authorization_checker');
+        if ($securityContext->isGranted('IS_AUTHENTICATED_FULLY')) {
+            $response = $this->forward('AppBundle:Default:index');
+            return $response;
+        }
+
+
         $authenticationUtils = $this->get('security.authentication_utils');
         // get the login error if there is one
         $error = $authenticationUtils->getLastAuthenticationError();

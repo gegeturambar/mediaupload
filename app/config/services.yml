@@ -13,7 +13,7 @@ services:
 
     app.service.utils.string:
         class: AppBundle\Service\Utils\UploadUtils
-        arguments: ["@app.service.utils.string", "%upload_dir%" ]
+        arguments: ["@app.service.utils.string", "%defaultPathDest%" ]
 
     app.service.handler.formhandler:
         class: AppBundle\Service\Handler\FormHandler

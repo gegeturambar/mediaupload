@@ -18,25 +18,26 @@
 
             {% if directories | length %}
             <div id="using_html_4" class="demo jstree jstree-6 jstree-default" role="tree" aria-multiselectable="true" tabindex="0" aria-activedescendant="j6_1" aria-busy="false">
-                {{ renderTree( directories ) }}
+                {{  renderTree( directories ) }}
             </div>
             {% endif %}
 
 
         </div>
-        <button type="button" id="sendData" class="btn btn-primary pull-right sendData" style="display: none"><?php echo "Upload";?></button>
+        <button type="button" id="sendData" class="btn btn-primary pull-right sendData" style="display: none">Upload</button>
         <div class="col-10 uploadcol">
             <div class="upload error text-danger mb-5"></div>
         </div>
         <div class="input_fields_wrap">
-            <span class="btn btn-info mb-10" id="avert"><?php echo "Veuillez sélectionnez un répertoire";?></span>
-            <button class="add_field_button btn btn-info mb-10" id="firstadd" style="display: none" ><?php echo "Ajouter un fichier";?></button>
+            <span class="btn btn-info mb-10" id="avert">Veuillez sélectionnez un répertoire</span>
+            <button class="add_field_button btn btn-info mb-10" id="firstadd" style="display: none" >Ajouter un fichier</button>
         </div>
 
     </form>
 {% endblock %}
 
 {% block javascripts %}
+    <script src="{{ asset('js/jstree.min.js') }}"></script>
 <script>
     var Upload = {};
     Upload.directory_id = undefined;
@@ -66,7 +67,8 @@
 
         $(document).on("click",".directory",function(e){
             Upload.directory_id = $(this).data('id');
-            Upload.directory_name = $(this).text();
+            Upload.directory_name = $(this).children('a').first().text()
+//            Upload.directory_name = $(this).text();
             console.log(Upload.directory_name);
             // get last button add
             $(".input_fields_wrap .add_field_button").last().text("Ajouter un fichier au répertoire "+Upload.directory_name);
@@ -96,7 +98,7 @@
 
             if(Upload.uploadCount < max_fields){ //max input box allowed
                 Upload.uploadCount++; //text box increment
-                $(wrapper).append('<div class="form-group"><input  data-directory="'+Upload.directory_id+'" type="file" name="myfile[]" class="fileUpload"/><a href="#" class="remove_field"><?php echo SUPPRIMER_FORM;?></a></div>'); //add input box
+                $(wrapper).append('<div class="form-group"><input  data-directory="'+Upload.directory_id+'" type="file" name="myfile[]" class="fileUpload"/><a href="#" class="remove_field">SUPPRIMER_FORM</a></div>'); //add input box
             }
         });
 
@@ -136,7 +138,7 @@
             data.append('directories',directories);
 
             jQuery.ajax({
-                url: 'envoiformulaire',
+                url: '{{ path("app.homepage.upload") }}',
                 data: data,
                 cache: false,
                 contentType: false,
@@ -180,5 +182,5 @@
 {% endblock %}
 
 {% block stylesheets %}
-
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.2.1/themes/default/style.min.css" />
 {% endblock %}

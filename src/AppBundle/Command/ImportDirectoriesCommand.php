@@ -111,9 +111,15 @@ class ImportDirectoriesCommand extends ContainerAwareCommand
         foreach ($items as $item) {
             if($item == '.' || $item == '..')
                 continue;
-            $goodName = $this->slugify->generateSlug($item);
+
             $path = $path_source . "\\$item";
             if (is_dir($path)) {
+
+                $goodName = $this->slugify->generateSlug($item);
+                if(empty($goodName)){
+                    var_dump($item);die();
+                }
+
                 //create directory
                 $newPath = $path_dest.DIRECTORY_SEPARATOR.$goodName;
                 if(!file_exists($newPath)) {

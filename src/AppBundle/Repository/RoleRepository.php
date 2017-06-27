@@ -26,10 +26,10 @@ class RoleRepository extends \Doctrine\ORM\EntityRepository
 
         if( $count <= 0 ){
             //TODO passer dans un service pour recup data from parameters
-            foreach(array("ROLE_SUPERUSER","ROLE_ADMIN","ROLE_USER") as $r){
+            foreach(array("SUPERUSER","ADMIN","USER") as $r){
                 try {
                     $role = new Role();
-                    $role->setName($r);
+                    $role->setName("ROLE_$r");
                     $ret = $em->persist($role);
                 }catch (Exception $ex){
                 }
