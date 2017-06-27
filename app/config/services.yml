@@ -23,6 +23,10 @@ services:
         class: AppBundle\Service\Handler\UserHandler
         arguments: [ '@doctrine','@security.password_encoder' ]
 
+    app.services.repository.extension:
+                class: AppBundle\Service\Repository\ExtensionRepository
+                arguments: [ '@doctrine' ]
+
     # makes classes in src/AppBundle available to be used as services
     # this creates a service per class whose id is the fully-qualified class name
     AppBundle\:
@@ -49,4 +53,5 @@ services:
         arguments: [ '@twig' ]
         tags:
             - { name: twig.extension }
+
 
