@@ -12,6 +12,12 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class Directory
 {
+
+    public function __construct()
+    {
+        $this->parent = null;
+    }
+
     /**
      * @return mixed
      */
@@ -60,10 +66,31 @@ class Directory
     private $name;
 
     /**
-     * @ORM\ManyToOne(targetEntity="User")
+     * @ORM\ManyToOne(targetEntity="Directory")
      * @ORM\JoinColumn(name="parent_id", referencedColumnName="id")
      */
     private $parent;
+
+    /**
+     * @return mixed
+     */
+    public function getChildren()
+    {
+        return $this->children;
+    }
+
+    /**
+     * @param mixed $children
+     */
+    public function setChildren($children)
+    {
+        $this->children = $children;
+    }
+
+    /**
+     * @ORM\OneToMany(targetEntity="Directory", mappedBy="parent")
+     */
+    private $children;
 
     /**
      * @var string
@@ -73,7 +100,8 @@ class Directory
     private $path;
 
     /**
-     * @ORM\OneToMany(targetEntity="Role", mappedBy="directories")
+     * @ORM\ManyToOne(targetEntity="Role", inversedBy="directories")
+     * @ORM\JoinColumn(name="role_id",referencedColumnName="id")
      */
     private $access;
 

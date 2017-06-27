@@ -12,6 +12,12 @@ use Doctrine\ORM\Mapping as ORM;
  */
 class Role
 {
+
+    public function __construct()
+    {
+        $this->directories = array();
+    }
+
     /**
      * @var int
      *
@@ -30,8 +36,7 @@ class Role
 
 
     /**
-     * @ORM\ManyToOne(targetEntity="Directory")
-     * @ORM\JoinColumn(name="directories",referencedColumnName="id")
+     * @ORM\OneToMany(targetEntity="Directory",mappedBy="access")
      */
     private $directories;
 

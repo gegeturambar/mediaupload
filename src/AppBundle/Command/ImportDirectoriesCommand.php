@@ -3,19 +3,34 @@
 namespace AppBundle\Command;
 
 
+use AppBundle\Entity\Directory;
 use AppBundle\Repository\DirectoryRepository;
 use AppBundle\Repository\MovieRepository;
+use AppBundle\Repository\RoleRepository;
+use AppBundle\Service\Repository\ExtensionRepository;
+use AppBundle\Service\Utils\SlugUtils;
+use Doctrine\Bundle\DoctrineBundle\Registry;
+use Doctrine\DBAL\Exception\DriverException;
 use Symfony\Bundle\FrameworkBundle\Command\ContainerAwareCommand;
 
+use Symfony\Component\Config\Definition\Exception\Exception;
 use Symfony\Component\Console\Helper\DialogHelper;
 use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Symfony\Component\Console\Output\OutputInterface;
+use Symfony\Component\HttpFoundation\File\File;
+use Symfony\Component\VarDumper\Caster\ReflectionCaster;
 
 
 class ImportDirectoriesCommand extends ContainerAwareCommand
 {
+
+    /* @var Registry $doctrine */
+    protected $doctrine;
+
+    /* @var SlugUtils $slugify */
+    protected $slugify;
 
     protected function configure()
     {
@@ -37,23 +52,33 @@ class ImportDirectoriesCommand extends ContainerAwareCommand
         $path_dest = (integer)$input->getArgument('pathDest');
         $path_dest = $path_dest ? $path_dest : $this->getContainer()->getParameter('defaultPathDest');
 
-        $doctrine = $this->getContainer()->get('doctrine');
-        $em = $doctrine->getManager();
+        /** @var ExtensionRepository $extensionRepository */
+        $extensionRepository = $this->getContainer()->get('app.services.repository.extension');
+        $extensionRepository->initExtensions();
 
-        /* @var DirectoryRepository $rc */
-        $rc = $doctrine->getRepository('AppBundle:Directory');
-        $rc->init();
-        $count = $rc->updateDirectoriesPrice($discount_rate);
 
-        $directoryModel   = new Directories();
-        $ret = $directoryModel->init();
+        $this->slugify = $this->getContainer()->get('app.service.utils.slug');
 
-        if($ret) {
-            $dir = $directoryModel->fetchOneByNameAndParent("ROOT");
-            copyDirectory('upload', $path_source, $path_dest ,$dir->id);
-        }
 
-        $output->writeln("You have copy all directories and create the records in the database accordingly" );
+        $this->doctrine = $this->getContainer()->get('doctrine');
+        $em = $this->doctrine->getManager();
+        /* @var \Doctrine\DBAL\Connection $connection */
+        $connection = $this->doctrine->getConnection();
+
+
+        /* @var RoleRepository $roleModel */
+        $roleModel = $this->doctrine->getRepository('AppBundle:Role');
+        $role = $roleModel->findOneBy(array('name'=>'ROLE_SUPERUSER'));
+
+        /* @var DirectoryRepository $directoryModel */
+        $directoryModel = $this->doctrine->getRepository('AppBundle:Directory');
+        $ret = $directoryModel->init($path_dest,$role);
+
+        $dir = $directoryModel->fetchOneByNameAndParent("ROOT");
+
+        $this->copyDirectory('upload', $path_source, $path_dest, $dir->getId());
+
+        $output->writeln("You have copied all directories and create the records in the database accordingly" );
     }
 
     function copyDirectory($item, $path_source, $path_dest,$parent_id = 1)
@@ -63,7 +88,10 @@ class ImportDirectoriesCommand extends ContainerAwareCommand
 
         $items = scandir($path_source);
 
-        $directoryModel   = new Directories();
+        /* @var DirectoryRepository $directoryModel */
+        $directoryModel = $this->doctrine->getRepository('AppBundle:Directory');
+        /* @var RoleRepository $roleModel */
+        $roleModel = $this->doctrine->getRepository('AppBundle:Role');
 
         $corresp = array(
             "exe"	=>  "application/octet-stream",
@@ -79,25 +107,38 @@ class ImportDirectoriesCommand extends ContainerAwareCommand
             "swf"   =>  "application/x-shockwave-flash"
         );
 
+        $bug = false;
         foreach ($items as $item) {
             if($item == '.' || $item == '..')
                 continue;
+            $goodName = $this->slugify->generateSlug($item);
             $path = $path_source . "\\$item";
-
             if (is_dir($path)) {
                 //create directory
-                if(!file_exists($path_dest.DIRECTORY_SEPARATOR.$item)) {
-                    mkdir($path_dest . DIRECTORY_SEPARATOR . $item);
+                $newPath = $path_dest.DIRECTORY_SEPARATOR.$goodName;
+                if(!file_exists($newPath)) {
+                    mkdir($newPath, 0777, true);
                 }
 
-
+                $parent = $directoryModel->find($parent_id);
                 // add directory to bdd if not exists
-                $directory = $directoryModel->fetchOneByNameAndParent($item, $parent_id);
+
+                $directory = $directoryModel->fetchOneByNameAndParent($goodName, $parent);
+
                 if(!$directory){
                     //create
+                    $directory = new Directory();
+                    $directory->setParent($parent);
+                    $directory->setPath($newPath);
+                    $directory->setName($goodName);
 
                     if($parent_id == 1) {
-                        $access = in_array(strtolower($item), array("exe", "lettre22", "lettre23")) ? "ADMIN" : "USER";
+                        // get
+                        $access = in_array(strtolower($goodName), array("exe", "lettre22", "lettre23")) ? "ADMIN" : "USER";
+                        $access = $roleModel->findOneBy(array('name'=>$access));
+                        $directory->setAccess($access);
+                        /*
+                         *
                         $exts = Utils::getConf()['import']['extensions'];
                         $extensions = array();
                         foreach ($corresp as $key => $val) {
@@ -106,18 +147,33 @@ class ImportDirectoriesCommand extends ContainerAwareCommand
                             }
                         }
                         $extensions = implode(",",$extensions);
+                        */
                     }else{
                         // take from parentid
-                        $dad = $directoryModel->fetchOne($parent_id);
-                        $extensions = $dad->extensions;
-                        $access = $dad->access;
+                        $dad = $directoryModel->find($parent_id);
+                        $directory->setAccess( $dad->getAccess() );
                     }
-                    $newParentId = $directoryModel->save(array('name'=>$item,'parentid'=>$parent_id, "path" => $path_dest . DIRECTORY_SEPARATOR . $item,"access"=>$access,"extensions"=>$extensions));
-                }else{
-                    $newParentId = $directory->id;
+
+
+                    $manager = $this->doctrine->getManager();
+                    try{
+                        $manager->persist($directory);
+                        $manager->flush();
+                    }catch (DriverException $ex){
+                        echo $ex->getMessage();
+                        var_dump($goodName);
+                        var_dump($items);die();
+                        $bug = true;
+                        continue;
+                    }
+
+                    //$newParentId = $directoryModel->save(array('name'=>$item,'parentid'=>$parent_id, "path" => $path_dest . DIRECTORY_SEPARATOR . $item,"access"=>$access));
                 }
 
-                copyDirectory( $item, $path, $path_dest."\\$item", $newParentId);
+                $newParentId = $directory->getId();
+
+                $this->copyDirectory($goodName, $path, $path_dest . "\\$goodName", $newParentId);
+
             }
         }
     }

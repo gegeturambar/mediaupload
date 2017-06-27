@@ -1,6 +1,10 @@
 <?php
 
 namespace AppBundle\Repository;
+use AppBundle\Entity\Role;
+use Doctrine\ORM\EntityManager;
+use Doctrine\ORM\Mapping;
+use Symfony\Component\Config\Definition\Exception\Exception;
 
 /**
  * RoleRepository
@@ -10,6 +14,31 @@ namespace AppBundle\Repository;
  */
 class RoleRepository extends \Doctrine\ORM\EntityRepository
 {
+
+    public function __construct(EntityManager $em, Mapping\ClassMetadata $class)
+    {
+        // check if empty, if yes, create accordingly
+//        $persister = $em->getUnitOfWork()->getEntityPersister($this->_entityName);
+        $qb = $em->createQueryBuilder();
+        $qb->select("count(role.id)");
+        $qb->from("AppBundle:Role","role");
+        $count = $qb->getQuery()->getSingleScalarResult();
+
+        if( $count <= 0 ){
+            //TODO passer dans un service pour recup data from parameters
+            foreach(array("ROLE_SUPERUSER","ROLE_ADMIN","ROLE_USER") as $r){
+                try {
+                    $role = new Role();
+                    $role->setName($r);
+                    $ret = $em->persist($role);
+                }catch (Exception $ex){
+                }
+            }
+            $em->flush();
+        }
+        parent::__construct($em, $class);
+    }
+
     public function getDefaultRole(){
         $name = 'ROLE_USER';
         $t= $this->createQueryBuilder("role")

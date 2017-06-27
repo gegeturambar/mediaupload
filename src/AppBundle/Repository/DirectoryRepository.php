@@ -2,7 +2,9 @@
 
 namespace AppBundle\Repository;
 use AppBundle\Entity\Directory;
+use Doctrine\ORM\EntityManager;
 use Doctrine\ORM\Mapping;
+use Symfony\Component\Config\Definition\Exception\Exception;
 
 /**
  * DirectoryRepository
@@ -19,44 +21,47 @@ class DirectoryRepository extends \Doctrine\ORM\EntityRepository
         parent::__construct($em, $class);
     }
 
-    public function init($basePath){
+    public function init( $basePath, $role ){
 
         $em = $this->getEntityManager();
-        $em->getConnection();
-        $connection = $em->getConnection();
         $tableName = $this->getClassMetadata()->getTableName();
+
+        $connection = $em->getConnection();
+
         $connection->beginTransaction();
+
         try {
-            //$connection->query('SET FOREIGN_KEY_CHECKS=0');
+
+            /*
+            $qb = $em->createQueryBuilder();
+            $qb->delete()->from("AppBundle:Directory",$tableName);
+            $qb->getQuery()->execute();
+*/
+            $connection->query("SET foreign_key_checks = 0;");
             $connection->query('DELETE FROM '.$tableName);
-            $connection->query('OPTIMIZE TABLE '.$tableName);
-            $qb = $connection->createQueryBuilder();
-            $qb->insert($tableName)->setValue('name',':name')
-                ->setValue("parentid",":parentid")
-                ->setValue("path",':path')
-                ->setValue('access',':access')
-                ->setParameters(array(
-                        ":name"      =>  'ROOT',
-                        ":parentid"  =>  0,
-                        ":path"      =>  $basePath,
-                        ":access"    =>  "ADMIN"
-                    )
-                );
-            //$connection->query('SET FOREIGN_KEY_CHECKS=1');
+
+            $connection->query('ALTER TABLE '.$tableName.' AUTO_INCREMENT = 1 ;');
+
+            $directory = new Directory();
+            $directory->setName('ROOT');
+            $directory->setPath($basePath);
+            $directory->setAccess($role);
+            $em->persist($directory);
+            $em->flush();
+
             $connection->commit();
+            return true;
+
         } catch (\Exception $e) {
             $connection->rollback();
+            return false;
+            //var_dump($e->getMessage());die(" exception here ");
         }
+        return false;
 
-        /*
-        $sql = "TRUNCATE TABLE $this->_table;ALTER TABLE $this->_table AUTO_INCREMENT = 1;";
+    }
 
-        $sql .= "INSERT INTO $this->_table (name,parentid,path,access,lft,rgt) VALUES (?,?,?,?,?,?);";
-        */
-        $base_path = "../../upload";
-        $options = array("ROOT",0,$base_path,"ADMIN",1,2);
-        $statement = $this->_dbh->prepare($sql);
-        $ret = $statement->execute($options);
-        return $ret;
+    public function fetchOneByNameAndParent($name,$parentid = null){
+        return $this->findOneBy(array("name"=>$name,"parent"=>$parentid));
     }
 }
