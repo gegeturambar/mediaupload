@@ -105,6 +105,29 @@ class Directory
      */
     private $access;
 
+    /**
+     * @var array
+     *
+     * @ORM\ManyToMany(targetEntity="Extension")
+     *
+     */
+    private $extensions;
+
+    /**
+     * @return array
+     */
+    public function getExtensions()
+    {
+        return $this->extensions;
+    }
+
+    /**
+     * @param array $extensions
+     */
+    public function setExtensions($extensions)
+    {
+        $this->extensions = $extensions;
+    }
 
     /**
      * Get id

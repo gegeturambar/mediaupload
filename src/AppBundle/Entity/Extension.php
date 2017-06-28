@@ -36,6 +36,29 @@ class Extension
     private $mimeType;
 
     /**
+     * @var boolean
+     *
+     * @ORM\Column(name="basic", type="boolean", options={"default":false}))
+     */
+    private $basic = false;
+
+    /**
+     * @return bool
+     */
+    public function isBasic()
+    {
+        return $this->basic;
+    }
+
+    /**
+     * @param bool $basic
+     */
+    public function setBasic($basic)
+    {
+        $this->basic = $basic;
+    }
+
+    /**
      * @var array
      *
      * @ORM\ManyToMany(targetEntity="Directory")

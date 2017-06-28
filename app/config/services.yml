@@ -11,9 +11,9 @@ services:
     app.service.utils.string:
         class: AppBundle\Service\Utils\StringUtils
 
-    app.service.utils.string:
+    app.service.utils.upload:
         class: AppBundle\Service\Utils\UploadUtils
-        arguments: ["@app.service.utils.string", "%defaultPathDest%" ]
+        arguments: ["@app.service.utils.string", "%defaultPathDest%","%import%","@doctrine" ]
 
     app.service.handler.formhandler:
         class: AppBundle\Service\Handler\FormHandler
@@ -47,6 +47,12 @@ services:
         arguments: ["@security.authorization_checker"]
         tags:
             - { name: form.type, alias: appbundle_user }
+
+    app.form.type.directory:
+            class: AppBundle\Form\DirectoryType
+            arguments: []
+            tags:
+                - { name: form.type, alias: appbundle_directory }
 
     app.services.twig:
         class: AppBundle\Service\Twig\FunctionExtension

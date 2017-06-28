@@ -4,8 +4,10 @@ namespace AppBundle\Controller;
 
 use AppBundle\Repository\DirectoryRepository;
 use AppBundle\Service\Utils\SlugUtils;
+use AppBundle\Service\Utils\UploadUtils;
 use Sensio\Bundle\FrameworkExtraBundle\Configuration\Route;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
+use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Authorization\AuthorizationChecker;
 
@@ -23,36 +25,14 @@ class DefaultController extends Controller
             return $response;
         }
 
-
-
-
-        $em = $this->getDoctrine()->getManager();
-        $directories = $em->getRepository("AppBundle:Directory")->findAll();
+        // TODO filter by access
+        $directories = $this->getDoctrine()->getRepository("AppBundle:Directory")->findAll();
 
         // replace this example code with whatever you need
         return $this->render('default/index.html.twig', [
             'base_dir' => realpath($this->getParameter('kernel.project_dir')) . DIRECTORY_SEPARATOR,
             'directories' => $directories
         ]);
-    }
-
-    //TODO create twig function
-    function generateTreeMenu($directories, $parent = 1, $limit = 0)
-    {
-        if ($limit > 1000) return '';
-        $tree = '';
-        $tree = '<ul class="jstree-container-ul jstree-children" role="group">';
-
-        for ($i = 0, $ni = count($directories); $i < $ni; $i++) {
-            if ($directories[$i]->parentid == $parent) {
-                $tree .= '<li role=\'treeitem\' class=\'directory\' data-id=\'' . $directories[$i]->id . '\'><a>';
-                $tree .= $directories[$i]->name . '</a>';
-                $tree .= generateTreeMenu($directories, $directories[$i]->id, $limit++);
-                $tree .= '</li>';
-            }
-        }
-        $tree .= '</ul>';
-        return $tree;
     }
 
     /**
@@ -62,6 +42,7 @@ class DefaultController extends Controller
 
         $message = $request->isXmlHttpRequest() ? $request->request->get('message') : $message;
         $directories_id = $request->isXmlHttpRequest() ? $request->request->get('directories') : $directories;
+        $directories_id = empty($directories_id) ? array() : explode(',',$directories_id);
         $files = $_FILES;
 
         $extensions_base = ['pdf', 'jpg', 'jpeg', 'png', 'image/jpeg', 'image/png', 'application/pdf'];
@@ -70,6 +51,10 @@ class DefaultController extends Controller
         // foreach files check mimes
 
         $count = count($_FILES['myfile']['name']);
+        if(!$count){
+            return new JsonResponse(array('success'=>false,'message'=>'Vous devez uploader des fichiers')
+            );
+        }
 
         $retour = [];
         $error ='';
@@ -77,6 +62,23 @@ class DefaultController extends Controller
         $files =[];
         $donneeFile =[];
         $realCount = 0;
+
+
+        $doctrine = $this->getDoctrine();
+        /* @var DirectoryRepository $rc */
+        $rc = $doctrine->getRepository("AppBundle:Directory");
+        $directories = $rc->findById($directories_id);
+        $files = $_FILES['myfile'];
+        $files['directories'] = $directories_id;
+
+        try{
+            // create demande with files
+            /* @var UploadUtils $upload */
+            $upload = $this->get('app.service.utils.upload');
+            $upload->uploadMulti($files);
+        }catch(Exception $ex){
+            //remove uploaded file
+        }
 
         /*
         for($i =0;$i<$count; $i++){
@@ -153,10 +155,12 @@ class DefaultController extends Controller
                 // here check extensions by directory
                 $extensions = $directory->extensions ? explode(',', $directory->extensions) : $extensions_base;
 
+
                 $upload = Utils::uploadMulti('myfile', $i, $path_dest, FALSE, $extensions);
                 if(!$upload){
                     $error .= sprintf(ERROR_UPLOAD_FORM_1, $titleImg).'<br/>';
                 }else{
+
                     // save records demande
                     $demandeModel = new Demandes();
                     $size = $_FILES['myfile']['size'][$i];
